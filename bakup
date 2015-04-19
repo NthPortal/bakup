@@ -7,14 +7,16 @@ ext=".bak"
 slash="/"
 
 print_usage() {
-	echo "Usage: $(basename $0) [OPTIONS] [-e|E extension] TARGET(S)"
+	echo "Appends the extension '.bak' to a file to back it up"
 	echo
-	echo -e "  -u \t\tMoves <TARGET>.bak to <TARGET> (unbakup)"
-	echo -e "  -f \t\tOverwrites file if it already exists"
-	echo -e "  -c \t\tCopies target instead of moving it"
-	echo -e "  -e <EXT>\tUses <EXT> as the extension instead of 'bak'"
-	echo -e "  -E \t\t-e without prompting for confirmation"
-	echo -e "  -h \t\tPrints this help message"
+	echo "Usage: $(basename $0) [OPTIONS] [-e|E EXTENSION] TARGET [TARGET...]"
+	echo
+	echo -e "   -u \t\tRenames TARGET.bak to TARGET (unbakup)"
+	echo -e "   -f \t\tOverwrites file if it already exists"
+	echo -e "   -c \t\tCopies TARGET instead of moving it"
+	echo -e "   -e EXT\tUses EXT as the extension instead of 'bak'"
+	echo -e "   -E \t\t-e without prompting for confirmation"
+	echo -e "   -h \t\tPrints this help message"
 	echo
 }
 
