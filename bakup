@@ -76,7 +76,7 @@ for item in $@
 do
 	noSlash=${item%$slash}
 	if [ $unbak = true ] ; then
-		if echo $noSlash | grep -q ".*$ext$" ; then
+		if echo $noSlash | grep -q ".+$ext$" ; then
 			$cmd $force $noSlash ${noSlash%$ext}
 		else
 			unable_to_unbak $noSlash
