@@ -9,7 +9,7 @@ slash="/"
 print_usage() {
 	echo "Appends the extension '.bak' to a file to back it up"
 	echo
-	echo "Usage: $(basename $0) [OPTIONS] [-e|E EXTENSION] TARGET [TARGET...]"
+	echo "Usage: $(basename "$0") [OPTIONS] [-e|E EXTENSION] TARGET [TARGET...]"
 	echo
 	echo -e "   -u \t\tRenames TARGET.bak to TARGET (unbakup)"
 	echo -e "   -f \t\tOverwrites file if it already exists"
@@ -46,7 +46,7 @@ while getopts ":ufce:E:h" opt; do
 		e)
 			ext=.$OPTARG
 			read -p "Are you sure you wish to use the extension '$ext'? [y/n]: " confirm
-			if !(echo "$confirm" | grep -q "[Yy].*") ; then
+			if ! (echo "$confirm" | grep -q "[Yy].*") ; then
 				exit 1
 			fi
 			;;
@@ -65,23 +65,23 @@ while getopts ":ufce:E:h" opt; do
 
 done
 
-shift `expr $OPTIND - 1`
+shift $((OPTIND - 1))
 
 if [ $# = 0 ] ; then
 	print_usage
 	exit 0
 fi
 
-for item in $@
+for item in "$@"
 do
 	noSlash=${item%$slash}
-	if [ $unbak = true ] ; then
-		if echo $noSlash | grep -q ".+$ext$" ; then
-			$cmd $force $noSlash ${noSlash%$ext}
+	if $unbak ; then
+		if echo "$noSlash" | grep -q ".$ext$" ; then
+			"$cmd" "$force" "$noSlash" "${noSlash%$ext}"
 		else
-			unable_to_unbak $noSlash
+			unable_to_unbak "$noSlash"
 		fi
 	else
-		$cmd $force $noSlash ${noSlash}$ext
+		"$cmd" "$force" "$noSlash" "${noSlash}""$ext"
 	fi
 done
