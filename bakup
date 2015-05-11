@@ -82,6 +82,6 @@ do
 			unable_to_unbak "$noSlash"
 		fi
 	else
-		$cmd $force "$noSlash" "${noSlash}""$ext"
+		$cmd $force "$noSlash" "$noSlash$ext"
 	fi
 done
