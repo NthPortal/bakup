@@ -77,11 +77,11 @@ do
 	noSlash=${item%$slash}
 	if $unbak ; then
 		if echo "$noSlash" | grep -q ".$ext$" ; then
-			"$cmd" "$force" "$noSlash" "${noSlash%$ext}"
+			$cmd $force "$noSlash" "${noSlash%$ext}"
 		else
 			unable_to_unbak "$noSlash"
 		fi
 	else
-		"$cmd" "$force" "$noSlash" "${noSlash}""$ext"
+		$cmd $force "$noSlash" "${noSlash}""$ext"
 	fi
 done
