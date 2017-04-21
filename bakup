@@ -1,37 +1,78 @@
 #! /bin/bash
 
+name=$(basename "$0")
+
 cmd="mv"
-unbak=false
+unbak_smart=false
+unbak_exact=false
 force="-i"
+no_clobber=""
 ext=".bak"
 slash="/"
+
+opt_e=false
 
 print_usage() {
 	echo "Appends the extension '.bak' to a file to back it up"
 	echo
-	echo "Usage: $(basename "$0") [OPTIONS] [-e|E EXTENSION] TARGET [TARGET...]"
+	echo "Usage: $name [OPTIONS] [-u|U] [-e|E EXTENSION] TARGET [TARGET...]"
 	echo
-	echo -e "   -u \t\tRenames TARGET.bak to TARGET (unbakup)"
-	echo -e "   -f \t\tOverwrites file if it already exists"
-	echo -e "   -c \t\tCopies TARGET instead of moving it"
-	echo -e "   -e EXT\tUses EXT as the extension instead of 'bak'"
-	echo -e "   -E \t\t-e without prompting for confirmation"
-	echo -e "   -h \t\tPrints this help message"
+	echo "   -u       Removes the '.bak' extension from TARGET (unbakup); if TARGET"
+	echo "                does not end in '.bak', it will perform the renaming on"
+	echo "                TARGET.bak if it exists"
+	echo "   -U       Removes the '.bak' extension from TARGET exactly; fails if"
+	echo "                TARGET does not end in '.bak'"
+	echo "   -f       Overwrites the destination file if it already exists"
+	echo "   -n       Do not overwrite an existing file (no clobber); overrides -f"
+	echo "   -c       Copies TARGET instead of moving it"
+	echo "   -e EXT   Uses EXT as the extension instead of '.bak'; will prepend a"
+	echo "                '.' if EXT does not begin with one"
+	echo "   -E EXT   Uses EXT exactly as provided as the extension instead of '.bak'"
+	echo "   -h       Prints this help message and exits"
 	echo
+}
+
+
+mutually_exclusive_opts() {
+	echo "Mutually exclusive options: $*"
 }
 
 unable_to_unbak() {
-	echo "'$ext' cannot be removed from '$1'"
+	echo "$name: '$ext' cannot be removed from '$1'"
 }
 
-while getopts ":ufce:E:h" opt; do
+# Params: source, dest
+do_op() {
+	src="$1"
+	dest="$2"
+	
+	if [ -e "$src" ] ; then
+		$cmd $cmd_opts "$src" "$dest"
+	else
+		echo "$name: cannot stat ‘$src’: No such file or directory"
+	fi
+}
 
+# Parse opts
+while getopts ":uUfnce:E:h" opt; do
 	case "$opt" in
 		u)
-			unbak=true
+			# Check for mutually exclusive opts
+			$unbak_exact && mutually_exclusive_opts "-u|U" && print_usage && exit 1
+			
+			unbak_smart=true
+			;;
+		U)
+			# Check for mutually exclusive opts
+			$unbak_smart && mutually_exclusive_opts "-u|U" && print_usage && exit 1
+		
+			unbak_exact=true
 			;;
 		f)
 			force="-f"
+			;;
+		n)
+			no_clobber="-n"
 			;;
 		c)
 			cmd="cp -r"
@@ -40,15 +81,23 @@ while getopts ":ufce:E:h" opt; do
 			print_usage
 			exit 0
 			;;
-		E)
-			ext=.$OPTARG
-			;;
 		e)
-			ext=.$OPTARG
-			read -p "Are you sure you wish to use the extension '$ext'? [y/n]: " confirm
-			if ! (echo "$confirm" | grep -q "[Yy].*") ; then
-				exit 1
+			# Check for mutually duplicate/mutually exclusive 
+			$opt_e && print_usage && exit 1
+			opt_e=true
+			
+			if (echo "$OPTARG" | grep -q "^\..*") ; then
+				ext=$OPTARG
+			else
+				ext=.$OPTARG
 			fi
+			;;
+		E)
+			# Check for duplicate/mutually exclusive opts
+			$opt_e && print_usage && exit 1
+			opt_e=true
+			
+			ext=$OPTARG
 			;;
 		:)
 			echo "-$OPTARG requires an argument."
@@ -62,26 +111,47 @@ while getopts ":ufce:E:h" opt; do
 			exit 1
 			;;
 	esac
-
 done
 
 shift $((OPTIND - 1))
 
+# Check that any targets after parsing opts
 if [ $# = 0 ] ; then
 	print_usage
-	exit 0
+	exit 1
 fi
 
+# Set opts for the command, no-clobber taking priority
+if [ -n "$no_clobber" ] ; then
+	cmd_opts="$no_clobber"
+else
+	cmd_opts="$force"
+fi
+
+# Loop over targets and perform operation on each
 for item in "$@"
 do
-	noSlash=${item%$slash}
-	if $unbak ; then
-		if echo "$noSlash" | grep -q ".$ext$" ; then
-			$cmd $force "$noSlash" "${noSlash%$ext}"
+	# Remove slash
+	target=${item%$slash}
+	
+	# Unbakup
+	if ($unbak_exact || $unbak_smart) ; then
+		# Ends with extension
+		if echo "$target" | grep -q ".$ext$" ; then
+			do_op "$target" "${target%$ext}"
+		# Smart unbakup
+		elif ($unbak_smart) ; then
+			if [ -e "$target$ext" ] ; then
+				$cmd $cmd_opts "$target$ext" "$target"
+			else
+				echo "$name: '$ext' cannot be removed from '$target', and there is no such file or directory '$target$ext'"
+			fi
+		# Target does not end in extension (and not smart unbakup)
 		else
-			unable_to_unbak "$noSlash"
+			unable_to_unbak "$target"
 		fi
+	# Bakup
 	else
-		$cmd $force "$noSlash" "$noSlash$ext"
+		do_op "$target" "$target$ext"
 	fi
 done
