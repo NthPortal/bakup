@@ -142,7 +142,7 @@ do
 		# Smart unbakup
 		elif ($unbak_smart) ; then
 			if [ -e "$target$ext" ] ; then
-				$cmd $cmd_opts "$target$ext" "$target"
+				do_op "$target$ext" "$target"
 			else
 				echo "$name: '$ext' cannot be removed from '$target', and there is no such file or directory '$target$ext'"
 			fi
