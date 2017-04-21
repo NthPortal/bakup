@@ -5,8 +5,7 @@ name=$(basename "$0")
 cmd="mv"
 unbak_smart=false
 unbak_exact=false
-force="-i"
-no_clobber=""
+overwrite="-i"
 ext=".bak"
 slash="/"
 
@@ -22,8 +21,12 @@ print_usage() {
 	echo "                TARGET.bak if it exists"
 	echo "   -U       Removes the '.bak' extension from TARGET exactly; fails if"
 	echo "                TARGET does not end in '.bak'"
-	echo "   -f       Overwrites the destination file if it already exists"
-	echo "   -n       Do not overwrite an existing file (no clobber); overrides -f"
+	echo "   -f       Do not prompt before overwriting an existing file (force);"
+	echo "                overrides -i and -n"
+	echo "   -i       Prompt before overwriting a file (interactive) [default];"
+	echo "                overrides -f and -n"
+	echo "   -n       Do not overwrite an existing file (no clobber);"
+	echo "                overrides -f and -i"
 	echo "   -c       Copies TARGET instead of moving it"
 	echo "   -e EXT   Uses EXT as the extension instead of '.bak'; will prepend a"
 	echo "                '.' if EXT does not begin with one"
@@ -47,14 +50,14 @@ do_op() {
 	dest="$2"
 	
 	if [ -e "$src" ] ; then
-		$cmd $cmd_opts "$src" "$dest"
+		$cmd $overwrite "$src" "$dest"
 	else
 		echo "$name: cannot stat ‘$src’: No such file or directory"
 	fi
 }
 
 # Parse opts
-while getopts ":uUfnce:E:h" opt; do
+while getopts ":uUfince:E:h" opt; do
 	case "$opt" in
 		u)
 			# Check for mutually exclusive opts
@@ -69,10 +72,13 @@ while getopts ":uUfnce:E:h" opt; do
 			unbak_exact=true
 			;;
 		f)
-			force="-f"
+			overwrite="-f"
+			;;
+		i)
+			overwrite="-i"
 			;;
 		n)
-			no_clobber="-n"
+			overwrite="-n"
 			;;
 		c)
 			cmd="cp -r"
@@ -87,9 +93,9 @@ while getopts ":uUfnce:E:h" opt; do
 			opt_e=true
 			
 			if (echo "$OPTARG" | grep -q "^\..*") ; then
-				ext=$OPTARG
+				ext="$OPTARG"
 			else
-				ext=.$OPTARG
+				ext=".$OPTARG"
 			fi
 			;;
 		E)
@@ -97,7 +103,7 @@ while getopts ":uUfnce:E:h" opt; do
 			$opt_e && print_usage && exit 1
 			opt_e=true
 			
-			ext=$OPTARG
+			ext="$OPTARG"
 			;;
 		:)
 			echo "-$OPTARG requires an argument."
@@ -119,13 +125,6 @@ shift $((OPTIND - 1))
 if [ $# = 0 ] ; then
 	print_usage
 	exit 1
-fi
-
-# Set opts for the command, no-clobber taking priority
-if [ -n "$no_clobber" ] ; then
-	cmd_opts="$no_clobber"
-else
-	cmd_opts="$force"
 fi
 
 # Loop over targets and perform operation on each
