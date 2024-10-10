@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/usr/bin/env bash
 
 name=$(basename "$0")
 
@@ -131,13 +131,13 @@ fi
 for item in "$@"
 do
 	# Remove slash
-	target=${item%$slash}
+	target=${item%"$slash"}
 	
 	# Unbakup
 	if ($unbak_exact || $unbak_smart) ; then
 		# Ends with extension
 		if echo "$target" | grep -q ".$ext$" ; then
-			do_op "$target" "${target%$ext}"
+			do_op "$target" "${target%"$ext"}"
 		# Smart unbakup
 		elif ($unbak_smart) ; then
 			if [ -e "$target$ext" ] ; then
